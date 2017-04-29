@@ -1,0 +1,8 @@
+global proc rg_makeAECam ()
+{
+	string $newcam[] = `camera`;
+	float $z = 26.6666;
+	float $y = 4.0;
+	setAttr ($newcam[0] +".tz") $z ;
+	setAttr ($newcam[0] +".ty") $y ;
+}

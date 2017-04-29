@@ -1,0 +1,90 @@
+//------------------------------------------------//
+//----- rg_randomizeSelection.mel
+//----- 01.28.11 - version 1.1
+//------------------------------------------------//
+//------------------------------------------------//
+
+//script launcher
+global proc rg_randomizeSelection(){
+	launchUI();
+}
+
+//Create the window
+global proc launchUI(){
+    global string $UIwin;
+    if(`window -exists $UIwin`) {
+        deleteUI $UIwin;
+        windowPref -remove $UIwin;
+    }
+        $UIwin = `window -widthHeight 240 200 "Randomize Selection"`;
+        addUIWidgets(); // Here we call the proc to load the elements like buttons, sliders, etc.
+    showWindow $UIwin;
+}
+
+//load the UI items
+global proc addUIWidgets(){
+	columnLayout  -adj on;
+	    text -label 
+	    "1. Select vertices or objects. \n2. Set min and max to displace randomly.\n3. Press button." -ww on;
+	    separator -hr on;
+	    global string $floatFldGrp;
+	    $floatFldGrp = `floatFieldGrp -numberOfFields 2 -l " Min : Max" -value1 -0.1 -value2 0.1 -columnAlign3 "left" "left" "left" -columnWidth3 60 10 10 -precision 3`;
+	    global string $enableXYZCheckBoxGrp;
+	    $enableXYZCheckBoxGrp = `checkBoxGrp -numberOfCheckBoxes 3 -columnWidth4 40 30 30 30 -columnAlign4 "left"  "left" "left" "left" -label "Enable:" -labelArray3 "X" "Y" "Z" -v1 on -v2 on -v3 on`;
+
+	    button  -label "Randomize Vertices" -command "randVertsButtonCmd";
+	    button  -label "Randomize Objects" -command "randObjsButtonCmd";
+	    
+}
+
+
+//Button Commands
+global proc randVertsButtonCmd(){
+	global string $floatFldGrp;
+	float $min =  `floatFieldGrp -q -v1 $floatFldGrp`;
+        float $max =  `floatFieldGrp -q -v2 $floatFldGrp`;
+	randomMoveVerts($min,$max);
+}
+
+global proc randObjsButtonCmd(){
+	global string $floatFldGrp;
+	float $min =  `floatFieldGrp -q -v1 $floatFldGrp`;
+        float $max =  `floatFieldGrp -q -v2 $floatFldGrp`;
+	randomMoveObjs($min,$max);
+}
+
+
+global proc randomMoveVerts(float $min, float $max){
+	global string $enableXYZCheckBoxGrp;
+	int $enableX = `checkBoxGrp -q -v1 $enableXYZCheckBoxGrp`;
+	int $enableY = `checkBoxGrp -q -v2 $enableXYZCheckBoxGrp`;
+	int $enableZ = `checkBoxGrp -q -v3 $enableXYZCheckBoxGrp`;
+	
+    // create a var to hold the random range value
+    global string $sel[];
+    $sel = `ls -selection`;
+    $expandSel = `filterExpand -selectionMask 31 -expand true $sel`;//31 = verts
+        for ($currentSel in $expandSel){
+            select -r $currentSel;
+            move -r -objectSpace -worldSpaceDistance  (rand($min,$max)*$enableX) (rand($min,$max)*$enableY) (rand($min,$max)*$enableZ) $currentSel;
+        }
+    // re-select what we started with
+    select -r $sel;
+}
+
+global proc randomMoveObjs(float $min, float $max){
+	global string $enableXYZCheckBoxGrp;
+	int $enableX = `checkBoxGrp -q -v1 $enableXYZCheckBoxGrp`;
+	int $enableY = `checkBoxGrp -q -v2 $enableXYZCheckBoxGrp`;
+	int $enableZ = `checkBoxGrp -q -v3 $enableXYZCheckBoxGrp`;
+    // create a var to hold the random range value
+    global string $sel[];
+    $sel = `ls -selection -tr`;//transforms
+    $expandSel = $sel; //no expansion on this version of the proc
+        for ($currentSel in $expandSel){
+            select -r $currentSel;
+            move -r -objectSpace -worldSpaceDistance  (rand($min,$max)*$enableX) (rand($min,$max)*$enableY) (rand($min,$max)*$enableZ) $currentSel;
+        }
+    // re-select what we started with
+    select -r $sel;
+}

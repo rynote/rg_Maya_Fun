@@ -1,0 +1,44 @@
+/////////////////////////////////////////////////////
+// Mel script to create the UV pass and shader setup
+// as learned in fxphd class Maya212
+// v1.0 02.25.11
+/////////////////////////////////////////////////////
+
+global proc rg_createUVshaderUVrenderPass(){
+
+//create a surface shader
+string $uvShader = `shadingNode -asShader surfaceShader`;
+$uvShader = `rename $uvShader ("uv_" + $uvShader)`;
+
+string $shadingGroup = ($uvShader + "SG");
+sets -renderable true -noSurfaceShader true -empty -name $shadingGroup;
+defaultNavigation -connectToExisting -source $uvShader -destination $shadingGroup;
+
+//create the mib_texture_vector
+$textureVec = `mrCreateCustomNode -asTexture "" mib_texture_vector`;
+setAttr ($textureVec + ".project") 1; //Project 1 == UV
+
+//create a uv Render Pass
+string $uvRenderPass = `createNode renderPass`;
+applyAttrPreset $uvRenderPass "/Applications/Autodesk/maya2011/Maya.app/Contents/presets/attrPresets/renderPass/customColor.mel" 1;
+setAttr ($uvRenderPass + ".frameBufferType") 512;
+
+//create the write_to_colorBuffer node
+$writeToColorBuf = `mrCreateCustomNode -asUtility "" writeToColorBuffer`;
+
+//set the writeToColorBuffer customColor to the uvRenderPass
+connectAttr ($uvRenderPass + ".message") ($writeToColorBuf + ".renderPass");
+
+//connect the surfaceShader to the colorBuffer
+connectAttr -f ($uvShader + ".outColor") ($writeToColorBuf + ".evaluationPassThrough");
+
+//connect the texture vector to the colorBuffer
+connectAttr -f ($textureVec +".outValue") ($writeToColorBuf + ".color");
+
+//rename the render pass to 'uv'
+rename $uvRenderPass ("uv");
+
+}
+
+rg_createUVshaderUVrenderPass();
+

@@ -1,0 +1,92 @@
+//-------------------------------------------//
+// 01/27/11
+// rg_animSpin.mel v1.0
+//
+// Spin an object 180 degrees revealing a
+// second object.
+//-------------------------------------------//
+
+//get things started
+global proc rg_animSpin(){
+    launchUI();
+}
+
+
+//Main proc
+global proc spin(int $duration){
+	int $startFrame = `currentTime -q`;
+	string $sel[]= `ls -sl -fl`;
+	string $selA;
+	$selA = $sel[0]; // assume
+
+	string $selB;
+	$selB= $sel[1]; // assume
+	
+	print ("Selection A: "+ $selA + "\n");
+	print ("Selection B: "+ $selB + "\n");
+	
+	float $initialYA =`getAttr ($selA + ".rotateY")`;
+	float $initialYB = `getAttr ($selB + ".rotateY")`;
+	
+	print ("Selection A Rotation: "+ $initialYA + "\n");
+	print ("Selection B Rotation: "+ $initialYB + "\n");
+	
+	//initial keyframe
+	setKeyframe -value ($initialYA) -time ($startFrame) -attribute "rotateY" -itt "flat" -ott "flat" ($selA + ".ry");
+	setKeyframe -value ($initialYB - 180) -time ($startFrame) -attribute "rotateY" -itt "flat" -ott "flat" ($selB + ".ry");
+	setKeyframe -v on -t ($startFrame) -attribute "visibility" -itt "clamped" -ott "clamped" ($selA + ".visibility");
+	setKeyframe -v off -t ($startFrame) -attribute "visibility" -itt "clamped" -ott "clamped" ($selB + ".visibility");
+	
+	//wind up keyframe
+	setKeyframe -v ($initialYA-6) -t ($startFrame + (.2*$duration)) -attribute "rotateY" -itt "flat" -ott "flat" ($selA + ".ry");
+	setKeyframe -v ($initialYB-6- 180) -t ($startFrame + (.2*$duration)) -attribute "rotateY" -itt "flat" -ott "flat" ($selB + ".ry");
+	
+	//mid-way point
+	setKeyframe -v ($initialYA + 90) -t ($startFrame + (.33*$duration)) -attribute "rotateY" -itt "linear" -ott "linear" ($selA + ".ry");
+	setKeyframe -v ($initialYB + 90- 180) -t ($startFrame + (.33*$duration)) -attribute "rotateY" -itt "linear" -ott "linear" ($selB + ".ry");
+	setKeyframe -v off -t ($startFrame + (.33*$duration)) -attribute "visibility" -itt "clamped" -ott "clamped" ($selA + ".visibility");
+	setKeyframe -v on -t ($startFrame + (.33*$duration)) -attribute "visibility" -itt "clamped" -ott "clamped" ($selB + ".visibility");
+	
+	//overshot keyframe
+	setKeyframe -v ($initialYA+195) -t ($startFrame + (.45*$duration)) -attribute "rotateY" -itt "flat" -ott "flat" ($selA + ".ry");
+	setKeyframe -v ($initialYB+195- 180) -t ($startFrame + (.45*$duration)) -attribute "rotateY" -itt "flat" -ott "flat" ($selB + ".ry");
+	
+	//snap back keyframe
+	setKeyframe -v ($initialYA+170) -t ($startFrame + (.66*$duration)) -attribute "rotateY" -itt "flat" -ott "flat" ($selA + ".ry");
+	setKeyframe -v ($initialYB+170- 180) -t ($startFrame + (.66*$duration)) -attribute "rotateY" -itt "flat" -ott "flat" ($selB + ".ry");
+	
+	//end keyframe
+	setKeyframe -v ($initialYA+180) -t ($startFrame + ($duration)) -attribute "rotateY" -itt "flat" -ott "flat" ($selA + ".ry");
+	setKeyframe -v ($initialYB+180 - 180) -t ($startFrame + ($duration)) -attribute "rotateY" -itt "flat" -ott "flat" ($selB + ".ry");
+}
+    
+//Create the window
+global proc launchUI(){
+    global string $UIwin;
+    if(`window -exists $UIwin`) {
+        deleteUI $UIwin;
+        windowPref -remove $UIwin;
+    }
+        $UIwin = `window -widthHeight 200 400 "Animated Spin Transition"`;
+        addUIWidgets(); // Here we call the proc to load the elements like buttons, sliders, etc.
+    showWindow $UIwin;
+}
+
+//load the UI items
+global proc addUIWidgets(){
+	columnLayout  -adj on;
+	    text -label "Select 2 objects.  First object will spin 180 degrees to reveal second object." -ww on;
+	    separator -hr on;
+	    global string $durationTextFldGrp;
+	    $durationTextFldGrp = `textFieldGrp -l "Duration:" -text "24" -columnAlign2 "left" "left" -columnWidth2 60 40`;
+	    button  -label "Spin It!" -command "spinItButtonCmd";
+	    
+}
+
+
+//Button Commands
+global proc spinItButtonCmd(){
+	global string $durationTextFldGrp;
+	int $duration = `textFieldGrp -q -text $durationTextFldGrp`;
+	spin($duration);
+}

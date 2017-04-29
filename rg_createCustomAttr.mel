@@ -1,0 +1,105 @@
+//-----Script Starter------------------------------//
+//------------------------------------------------//
+//----- rg_createCustomAttr.mel
+//----- 02/01/2011 version 1.0
+//------------------------------------------------//
+//------------------------------------------------//
+
+
+//UI that lets you add an expression to selected attr in channel box, with option to add an 'influence' attr to be able to fade it off or on
+
+
+
+//script launcher
+global proc rg_createCustomAttr(){
+	launchUI();
+}
+
+//Create the window
+global proc launchUI(){
+    global string $UIwin;
+    if(`window -exists $UIwin`) {
+        deleteUI $UIwin;
+        windowPref -remove $UIwin;
+    }
+        $UIwin = `window -widthHeight 400 400 "Create Custom Attributes..."`;
+        addUIWidgets(); // Here we call the proc to load the elements like buttons, sliders, etc.
+    showWindow $UIwin;
+}
+
+//load the UI items
+global proc addUIWidgets(){
+	columnLayout  -adj on;
+	    text -label "This will create one for each: randomness, keyframe-ability, and influence.  See options for more info." -ww on;
+	    separator -hr on;
+	    textFieldGrp -l "Attr name:" -text "name" -columnAlign2 "left" "left" -columnWidth2 60 100 rg_customAttrTextGrp; //hard coded name
+	    button  -label "Submit" -command "submitButtonCmd";
+	    
+	    text -label "";
+	
+		frameLayout -label "Options" -collapsable true -collapse on -borderStyle "etchedIn" -width 400; 
+			columnLayout;
+			checkBoxGrp -l "Create with expression" -columnAlign2 "left" "left" -ncb 1 -value1 0 rg_randExpressionCheckBoxGrp;
+			textFieldGrp -l "Expression:" -text "rand(-1,1)" -columnAlign2 "left" "left" -columnWidth2 60 300 rg_expressionTextGrp;//hard coded name
+			text -label "";
+			text -label "example: rand(-1,1) :: sin(time*x)*y" -font "obliqueLabelFont" ;
+			text -label "";
+			setParent ..;//column
+			text -label "Info:" -font "obliqueLabelFont";
+			text -label "If an attribute is selected in the channel box then that animation curve will be copied to the new custom keyframe attribute, and replaced with an expression to link to a combination of the new attributes.  This will allow combination of random values and keyframe data over time if desired.  Text entered in the expression box will be placed in an expression for the new rand attribute.  Make sure it is legit.  Check the command output for an expression that can be used in whatever transform attribute you want if you aren't enhancing an existing keyframe animation. Confused?" -ww on;
+		setParent ..;//frame
+	    
+}
+
+
+//Button Commands
+global proc submitButtonCmd(){
+	global string $someTextFldGrp;
+	string $enteredValue = `textFieldGrp -q -text rg_customAttrTextGrp`;
+	mainCode($enteredValue);
+}
+
+global proc mainCode(string $customName){
+	
+	string $expression = "rand(-1,1);";
+	string $sel[]= `ls -sl -tr`;//get obj
+	string $selAttr[] = `channelBox -q -selectedMainAttributes mainChannelBox`;//get attr from chanbox
+	
+	for ($obj in $sel){
+		select $obj;
+		string $attrRand = $customName + "_rand";
+		string $attrKey = $customName + "_key";
+		string $attrInfl = $customName + "_infl";
+		addAttr -at "float" -ln $attrRand -keyable yes -defaultValue 0;
+		addAttr -at "float" -ln $attrKey -keyable yes;
+		addAttr -at "float" -ln $attrInfl -keyable yes -max 1 -min 0 -defaultValue 1;
+		
+		//check if attr selected in chanbox
+		if ( size($selAttr) == 1){ 
+			//get the animCurve for the selected attribute in the chan box
+			string $attrLongName = `attributeName -l ($obj + "." + $selAttr[0])`;
+			string $attrShortName = `attributeName -s ($obj + "." + $selAttr[0])`;
+			string $attrCurve = ($obj + "_" + $attrLongName);
+			//and connect it to the new key attr if anim curve exists
+			if (`objExists $attrCurve`){
+				connectAttr -f ($attrCurve + ".output") ($obj + "." + $attrKey);
+				CBdeleteConnection ($obj + "." + $attrLongName);
+				expression -o $obj -s ($selAttr[0] + " = " + $obj + "." + $attrRand + "*" + $attrInfl + "+" + $attrKey);
+			}
+		}
+		
+		if (`checkBoxGrp -q -v1 rg_randExpressionCheckBoxGrp` ==1){ //if expression is enabled
+			expression -o $obj -s ($attrRand + " = " + `textFieldGrp -q -text rg_expressionTextGrp`);
+		}
+		
+		
+		print ("\nAdd expression containing this to get the result into a\
+		       transform attribute:\n(" + $attrRand + " * " + $attrInfl + ") + " + $attrKey + "\n");
+		}
+
+}//end mainCode
+
+//-------------END OF SCRIPT STARTER--------------//
+//------------------------------------------------//
+
+rg_createCustomAttr;

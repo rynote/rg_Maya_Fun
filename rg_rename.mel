@@ -1,0 +1,41 @@
+//rg_rename contains the UI
+
+global proc rg_rename(){
+	if (`window -exists rg_renameUI`) {
+		deleteUI rg_renameUI;
+	}
+	
+	window -mxb off rg_renameUI;
+		
+	columnLayout -adj 1 mainCol;
+		textScrollList -h 150 renameTSL;
+		button -l "Get Objects" -command populateTSL getButton;
+		text -l "New name:(don't add #'s)";
+		textField newNameTextField;
+		button -l "Rename" -c renameThis renameButton;
+	
+	showWindow rg_renameUI;
+
+}
+
+global proc populateTSL(){
+	string $sel[] = `ls -sl`;
+	
+	for ($each in $sel){
+		textScrollList -e -a $each renameTSL;
+	}
+}
+
+proc renameThis(){
+	string $itemsInTSL[] = `textScrollList -q -allItems renameTSL`;
+	
+	string $newName = `textField -q -text newNameTextField`;
+	
+	for ($each in $itemsInTSL){
+		rename $each ($newName + "_#");
+	}
+	
+	//clean up TSL
+	textScrollList -e -removeAll renameTSL;
+}
+	

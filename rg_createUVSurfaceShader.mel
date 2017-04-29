@@ -1,0 +1,34 @@
+//-----Script Starter------------------------------//
+//------------------------------------------------//
+//----- rg_createUVSurfaceShader.mel
+//----- 05/08/2011
+//--run rg_createUVSurfaceShader to create the uv shader
+//--and sets framebuffer to 32bit float
+//------------------------------------------------//
+//------------------------------------------------//
+
+
+global proc rg_createUVSurfaceShader(){
+    createNode -name "redRamp" ramp;
+    setAttr redRamp.type 1;
+    removeMultiInstance -break true redRamp.colorEntryList[2];
+    setAttr redRamp.colorEntryList[0].position 0;
+    setAttr redRamp.colorEntryList[1].position 1;
+    setAttr redRamp.colorEntryList[0].color -type double3 0 0 0;
+    setAttr redRamp.colorEntryList[1].color -type double3 1 0 0;
+    createNode -name "greenRamp" ramp;
+    setAttr greenRamp.type 0;
+    removeMultiInstance -break true greenRamp.colorEntryList[2];
+    setAttr greenRamp.colorEntryList[0].position 0;
+    setAttr greenRamp.colorEntryList[1].position 1;
+    setAttr greenRamp.colorEntryList[0].color -type double3 0 0 0;
+    setAttr greenRamp.colorEntryList[1].color -type double3 0 1 0;
+    createNode -name "pma" plusMinusAverage;
+    setAttr pma.operation 1;
+    connectAttr -f redRamp.outColor pma.input3D[0];
+    connectAttr -f greenRamp.outColor pma.input3D[1];
+    shadingNode -name "uvSurfaceShader" -asShader surfaceShader;
+    connectAttr -f pma.output3D uvSurfaceShader.outColor;
+    setAttr miDefaultFramebuffer.datatype 5;
+}
+

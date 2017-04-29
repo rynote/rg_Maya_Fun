@@ -1,0 +1,17 @@
+global proc ToggleResolutionGate(){
+
+	string $whichPanel = `getPanel -withFocus`;
+    print $whichPanel; print "\n";
+
+	string $nameCamera = `modelPanel -q -camera $whichPanel`;
+	print $nameCamera; print "\n";
+	
+	if (`camera -q -displayResolution $nameCamera` == 1){
+		camera -e -dr off $nameCamera;
+		}else {
+		camera -e -dr on $nameCamera;
+		}
+
+
+}
+

@@ -1,0 +1,84 @@
+//-------------------------------------------//
+// 01/27/11
+// rg_CopyTransAndRot.mel v1.0
+//
+//move an object to the match the world space
+//of another object.
+//first select object in the end position,
+//followed by objects to move
+//-------------------------------------------//
+
+
+global proc rg_copyTransAndRot(){
+    launchUI();
+}
+
+
+global proc run(string $which){
+
+//Get the selected objects.  [0] will be the target
+    global string $sel[];
+    $sel= `ls -sl`; //don't use -dag -leaf because we need transform, not shape?
+
+//select the first object
+    select -r $sel[0];
+
+//Get the worldspace position of the first object
+global float $destPos[];
+$destPos = `xform -q -ws -t`;
+
+//get the rotation of object
+global float $destRot[];
+$destRot = `xform -q -ws -ro`;
+
+if (($which == "trans") || ($which == "both")){
+//Move the selected objects to this position
+    for ($i = 1; $i < size($sel); $i++){
+        select -r $sel[$i];
+        xform -a -t $destPos[0] $destPos[1] $destPos[2];
+    }
+}
+
+if (($which == "rot") || ($which == "both")){
+//Rotate the selected objects to match sel[0]
+    for ($i = 1; $i < size($sel); $i++){
+        select -r $sel[$i];
+        xform -a -ro $destRot[0] $destRot[1] $destRot[2];
+    }
+
+}
+
+}//end proc run()
+
+global proc launchUI(){
+    global string $UIwin;
+    if(`window -exists $UIwin`) {
+        deleteUI $UIwin;
+        windowPref -remove $UIwin;
+    }
+        $UIwin = `window -widthHeight 200 140 "Copy Trans and Rot..."`;
+        addUIWidgets(); // Here we call the proc to load the elements like buttons, sliders, etc.
+    showWindow $UIwin;
+}
+
+global proc addUIWidgets(){
+	columnLayout  -adj on;
+	    text -label "Select objects.  First object will be the destination for other objects." -ww on;
+	    separator -hr on;
+	    button  -label "Copy Translation" -command "copyTransButtonCmd";
+	    button  -label "Copy Rotation" -command "copyRotButtonCmd";
+	    button  -label "Copy Translation and Rotation" -command "copyBothButtonCmd";
+	    
+}
+
+
+//Button Commands
+global proc copyTransButtonCmd(){
+    run("trans");
+}
+global proc copyRotButtonCmd(){
+    run("rot");
+}
+global proc copyBothButtonCmd(){
+    run("both");
+}
